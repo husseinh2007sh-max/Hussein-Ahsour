@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SH Code Heart with Image Fade-In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050004;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* أنيميشن التحميل التدريجي للصفحة كاملة */
+        .page-loader {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: scale(0.95);
+            animation: fadeInPage 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes fadeInPage {
+            0% {
+                opacity: 0;
+                transform: scale(0.92);
+                filter: blur(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0px);
+            }
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* حاوية الصورة المدمجة في المنتصف */
+        .center-image-container {
+            position: absolute;
+            z-index: 10;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            padding: 4px;
+            background: linear-gradient(45deg, #ff0055, #ff7676, #050004);
+            box-shadow: 0 0 25px rgba(255, 0, 85, 0.8), 0 0 50px rgba(255, 0, 85, 0.4);
+            animation: heartbeatBox 2.5s infinite ease-in-out, fadeInImg 3s ease-out forwards;
+            opacity: 0;
+        }
+
+        .center-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        /* أنيميشن التلاشي والظهور التدريجي للصورة */
+        @keyframes fadeInImg {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            60% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* أنيميشن النبض المتناسق مع القلب */
+        @keyframes heartbeatBox {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.08);
+            }
+        }
+
+        .code-overlay {
+            position: absolute;
+            bottom: 30px;
+            z-index: 2;
+            color: rgba(255, 50, 80, 0.6);
+            font-size: 12px;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(255, 0, 80, 0.8);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-loader">
+        <canvas id="canvas"></canvas>
+
+        <!-- إطار الصورة في منتصف القلب -->
+        <div class="center-image-container">
+            <!-- استبدل my-image.jpg باسم ملف الصورة لديك -->
+            <img src="my-image.jpg" alt="User Image">
+        </div>
+
+        <div class="code-overlay">
+            <p>&lt;div id="SH-Heart"&gt;</p>
+            <p>while(alive) { love(); }</p>
+            <p>&lt;/div&gt;</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const heartParticles = [];
+        const floatingSH = [];
+        const heartParticleCount = 380;
+        const floatingCount = 130;
+
+        function getHeartPoint(t) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+            return { x, y };
+        }
+
+        for (let i = 0; i < heartParticleCount; i++) {
+            const t = Math.PI * 2 * (i / heartParticleCount);
+            const pos = getHeartPoint(t);
+            heartParticles.push({
+                baseX: pos.x,
+                baseY: pos.y,
+                char: (i % 2 === 0) ? 'S' : 'H',
+                size: Math.random() * 8 + 10,
+                offset: Math.random() * Math.PI * 2,
+                colorHue: Math.random() * 20 + 340
+            });
+        }
+
+        for (let i = 0; i < floatingCount; i++) {
+            floatingSH.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                char: Math.random() > 0.5 ? 'S' : 'H',
+                size: Math.random() * 18 + 8,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
+                alpha: Math.random() * 0.5 + 0.1,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.02
+            });
+        }
+
+        let pulseTime = 0;
+
+        function render() {
+            ctx.fillStyle = 'rgba(5, 0, 4, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            pulseTime += 0.04;
+            const scale = (Math.sin(pulseTime) * 0.12 + 1.1) * (Math.min(width, height) / 40);
+
+            // 1. خلفية حروف SH العائمة
+            floatingSH.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rotation += p.rotSpeed;
+
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.fillStyle = `rgba(255, 30, 80, ${p.alpha * 0.6})`;
+                ctx.font = `${p.size}px 'Courier New', monospace`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(255, 0, 80, 0.5)';
+                ctx.fillText(p.char, 0, 0);
+                ctx.restore();
+            });
+
+            // 2. نقاط القلب
+            const centerX = width / 2;
+            const centerY = height / 2 - 10;
+
+            heartParticles.forEach((p) => {
+                const noiseX = Math.sin(pulseTime * 2 + p.offset) * 2;
+                const noiseY = Math.cos(pulseTime * 2 + p.offset) * 2;
+
+                const x = centerX + (p.baseX * scale) + noiseX;
+                const y = centerY + (p.baseY * scale) + noiseY;
+
+                ctx.save();
+                ctx.fillStyle = `hsl(${p.colorHue}, 100%, 65%)`;
+                ctx.font = `bold ${p.size * (scale / 12)}px 'Courier New', monospace`;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#ff0055';
+                ctx.fillText(p.char, x, y);
+                ctx.restore();
+            });
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+</body>
+</html>
